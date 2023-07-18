@@ -1,5 +1,3 @@
-#include <stm32f7xx.h>
-
 #include <gpio.hpp>
 using namespace cmsis;
 #define SET_BIT(REG, BIT) ((REG) |= (BIT))
@@ -59,7 +57,7 @@ port_name_t cmsis::gpio_port_t::name() const {
 #endif
 }
 
-void cmsis::gpio_port_t::clock_enable() {
+void cmsis::gpio_port_t::clock_enabled(bool value) {
     uint32_t r;
     __IO uint32_t tmpreg;
     switch (name()) {
@@ -105,21 +103,90 @@ void cmsis::gpio_port_t::clock_enable() {
         case port_name_t::j:
             r = RCC_AHB1ENR_GPIOJEN;
             break;
-#endif /* GPIOJ */
+#endif
 #if defined(GPIOK)
         case port_name_t::k:
             r = RCC_AHB1ENR_GPIOKEN;
             break;
-#endif            /* GPIOK */
+#endif           
         default:  // port_name_t::a:
             r = RCC_AHB1ENR_GPIOAEN;
             break;
     }
-    SET_BIT(RCC->AHB1ENR, r);
+    if(value) {
+      SET_BIT(RCC->AHB1ENR, r);
+    } else {
+      CLEAR_BIT(RCC->AHB1ENR, r);
+    }
     tmpreg = READ_BIT(RCC->AHB1ENR, r);  // delay
     (void)tmpreg;
 }
+bool cmsis::gpio_port_t::clock_enabled() const {
+    uint32_t r;
+    __IO uint32_t result;
+    switch (name()) {
+        case port_name_t::b:
+            r = RCC_AHB1ENR_GPIOBEN;
+            break;
+#if defined(GPIOC)
+        case port_name_t::c:
+            r = RCC_AHB1ENR_GPIOCEN;
+            break;
+#endif
+#if defined(GPIOD)
+        case port_name_t::d:
+            r = RCC_AHB1ENR_GPIODEN;
+            break;
+#endif
+#if defined(GPIOE)
+        case port_name_t::e:
+            r = RCC_AHB1ENR_GPIOEEN;
+            break;
+#endif
+#if defined(GPIOF)
+        case port_name_t::f:
+            r = RCC_AHB1ENR_GPIOFEN;
+            break;
+#endif
+#if defined(GPIOG)
+        case port_name_t::g:
+            r = RCC_AHB1ENR_GPIOGEN;
+            break;
+#endif
+#if defined(GPIOH)
+        case port_name_t::h:
+            r = RCC_AHB1ENR_GPIOHEN;
+            break;
+#endif
+#if defined(GPIOI)
+        case port_name_t::i:
+            r = RCC_AHB1ENR_GPIOIEN;
+            break;
+#endif
+#if defined(GPIOJ)
+        case port_name_t::j:
+            r = RCC_AHB1ENR_GPIOJEN;
+            break;
+#endif
+#if defined(GPIOK)
+        case port_name_t::k:
+            r = RCC_AHB1ENR_GPIOKEN;
+            break;
+#endif           
+        default:  // port_name_t::a:
+            r = RCC_AHB1ENR_GPIOAEN;
+            break;
+    }
+    result = READ_BIT(RCC->AHB1ENR, r);  // delay
+    return !!result;
+}
 
+void cmsis::gpio_pin_t::port_clock_enabled(bool value) {
+    gpio_ports[(size_t)port].clock_enabled(value);
+}
+bool cmsis::gpio_pin_t::port_clock_enabled() const {
+    return gpio_ports[(size_t)port].clock_enabled();
+}
 void cmsis::gpio_pin_t::mode(pin_mode_t value) {
     const unsigned shl = 1 << index;
     MODIFY_REG(gpio_ports[(size_t)port].reg_base->MODER, (GPIO_MODER_MODER0 << (POSITION_VAL(shl) * 2U)), (uint32_t(value) << (POSITION_VAL(shl) * 2U)));
@@ -174,6 +241,7 @@ pin_speed_t cmsis::gpio_pin_t::speed() const {
                                   (GPIO_OSPEEDER_OSPEEDR0 << (POSITION_VAL(shl) * 2U))) >>
                          (POSITION_VAL(shl) * 2U));
 }
+
 gpio_port_t cmsis::gpio_ports[] = {
     {(GPIO_TypeDef *)GPIOA_BASE},
     {(GPIO_TypeDef *)GPIOB_BASE}
